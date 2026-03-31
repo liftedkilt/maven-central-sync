@@ -1,0 +1,9 @@
+go 1.23
+
+use (
+	./cmd/publisher-service
+	./cmd/webhook-receiver
+	./internal/sync
+	./mock-central
+	./sync-service
+)

@@ -1,0 +1,66 @@
+services:
+  nexus:
+    image: sonatype/nexus3
+    ports:
+      - "8081:8081"
+    volumes:
+      - nexus-data:/nexus-data
+      - ${NEXUS_LICENSE_FILE:-./nexus-license.lic}:/nexus-data/sonatype-license.lic:ro
+    environment:
+      INSTALL4J_ADD_VM_PARAMS: "-Xms1200m -Xmx1200m -XX:MaxDirectMemorySize=2g -Djava.util.prefs.userRoot=/nexus-data/javaprefs"
+      NEXUS_LICENSE_FILE: /nexus-data/sonatype-license.lic
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/service/rest/v1/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - maven-sync-net
+
+  sync-service:
+    build:
+      context: .
+      dockerfile: sync-service/Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      nexus:
+        condition: service_healthy
+      mock-central:
+        condition: service_healthy
+    environment:
+      NEXUS_URL: http://nexus:8081
+      NEXUS_USERNAME: ${NEXUS_USERNAME:-admin}
+      NEXUS_PASSWORD: ${NEXUS_PASSWORD:-admin123}
+      MAVEN_CENTRAL_URL: http://mock-central:8082
+      MAVEN_CENTRAL_TOKEN: ${MAVEN_CENTRAL_TOKEN:-test-token}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-3}
+      FETCH_RETRY_TIMEOUT: ${FETCH_RETRY_TIMEOUT:-60s}
+      HTTP_TIMEOUT: ${HTTP_TIMEOUT:-120s}
+      PUBLISH_TIMEOUT: ${PUBLISH_TIMEOUT:-300s}
+      PUBLISH_POLL_INTERVAL: ${PUBLISH_POLL_INTERVAL:-5s}
+    networks:
+      maven-sync-net:
+        aliases:
+          - sync-service
+
+  mock-central:
+    build: ./mock-central
+    ports:
+      - "8082:8082"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      maven-sync-net:
+        aliases:
+          - mock-central
+
+volumes:
+  nexus-data:
+
+networks:
+  maven-sync-net:

@@ -1,0 +1,15 @@
+# Claude Code local settings
+.claude/settings.local.json
+
+# Go binaries
+sync-service/sync-service
+mock-central/mock-central
+cmd/publisher-service/publisher-service
+cmd/webhook-receiver/webhook-receiver
+*.exe
+
+# Environment files
+.env
+
+# Nexus Pro license
+*.lic

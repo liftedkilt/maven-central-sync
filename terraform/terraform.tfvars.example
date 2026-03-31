@@ -1,0 +1,6 @@
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+nexus_url  = "https://nexus.example.com"
+nexus_username = "admin"
+maven_central_url = "https://central.sonatype.com"
+publisher_max_instances = 50
